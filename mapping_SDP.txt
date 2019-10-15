@@ -1,0 +1,21 @@
+n - disable/enable	-- DHCP
+y - 192.168.70.10	-- Ipaddress		-- CAMERA_SET_IP
+n - 255.255.255.0	-- subnetmask
+n - 192.168.70.50	-- gateway
+n - disable/enable	-- get DHCP DNS
+n - 192.160.32.2	-- primary DNS
+n - 192.160.32.0	-- secondary DNS
+n - disable			-- GET DOMAIN DHCP
+n - smitlocal		-- DNS domain
+n - smit			-- 
+n - 8080			-- HTTP port
+n - 9000			-- ONVIF_port
+n - 8008			-- RTSP server port
+n - 120				-- Session timeout
+n - enable			-- Multicast
+n - 224.0.0.0		-- Multicast IP
+n - 8010			-- Multicast port
+n - 2				-- Multicast TTL
+n - 17215			-- ISO17215 port
+y - 8110			-- Stream port		-- STREAMIG_PORT
+n - enable/disable  -- RTP Enable
