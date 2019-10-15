@@ -6,24 +6,24 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <pthread.h>
 
 #include "state.h"
 
 #define PORT	53252
 #define MAXLINE 1024
 
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
 void dump(char* buffer, int len);
 
+void * socketThread(void *arg);
 void process_payload(char* payload, int len, char** ret_payload, int* ret_len);
 
 int main() {
 	int sd, nsd;
-	char buffer[MAXLINE];
 	struct sockaddr_in me, you;
 	struct in_addr localaddr;
-
-	char *ret_buf;
-	int ret_len;
 
 	if ( (sd = socket(AF_INET, SOCK_STREAM, 0)) < 0 ) {
 		perror("socket creation failed");
@@ -58,40 +58,69 @@ int main() {
     initvar();
     filein();
     
+    pthread_t tid[60];
+    int i = 0;
+    
 	while(1){
-		int you_len, n;
+		int you_len;
 		
         nsd = accept(sd, (struct sockaddr *) &you, &you_len);
         if (nsd < 0) {
             perror("accept error");
             exit(EXIT_FAILURE);
         }
-    
-		memset(buffer, 0 , sizeof(buffer));
-		
-		n = read(nsd, (char *)buffer, MAXLINE);
-
-        /*
-		printf("CLIENT : %s\n",inet_ntoa(you.sin_addr));
-		printf("D_CLIENT: %d(%04X)\n",n,n);
-		dump(buffer, n);
-		*/
-		
-		process_payload(buffer, n, &ret_buf, &ret_len);
         
-        /*
-		printf("RESP:\n");
-		dump(ret_buf,ret_len);
-        */
-		
-		if(write(nsd, (const char *)ret_buf, ret_len) <0 ){
-			perror("response error");
-			exit(EXIT_FAILURE);
-		}
-		fileout();		
+		if( pthread_create(&tid[i], NULL, socketThread, &nsd) != 0 )
+           printf("Failed to create thread\n");
+        if( i >= 50)
+        {
+          i = 0;
+          while(i < 50)
+          {
+            pthread_join(tid[i++],NULL);
+          }
+          i = 0;
+        }
 	}
 
 	return 0;
+}
+
+void * socketThread(void *arg){   
+	char buffer[MAXLINE]; 
+	char *ret_buf;
+	int ret_len;
+    int n;
+	
+    int nsd = *((int *)arg);
+
+    memset(buffer, 0 , sizeof(buffer));
+		
+    n = read(nsd, (char *)buffer, MAXLINE);
+
+    /*
+    printf("CLIENT : %s\n",inet_ntoa(you.sin_addr));
+    printf("D_CLIENT: %d(%04X)\n",n,n);
+    dump(buffer, n);
+    */
+
+    pthread_mutex_lock(&lock);
+    process_payload(buffer, n, &ret_buf, &ret_len);
+
+    /*
+    printf("RESP:\n");
+    dump(ret_buf,ret_len);
+    */
+
+    fileout();
+    pthread_mutex_unlock(&lock);
+
+    if(write(nsd, (const char *)ret_buf, ret_len) <0 ){
+        perror("response error");
+        exit(EXIT_FAILURE);
+    }
+    close(nsd);
+    pthread_exit(NULL);
 }
 
 void process_payload(char* payload, int maxlen, char** ret_payload, int* ret_len){
