@@ -101,25 +101,25 @@ void writeVar(char *var, char* val){
     printf("W: %s -> %s\n", var, val);
 
     if(strcmp(var,"CAMERA_STREAMING") == 0){
-        sscanf(val, "%2" SCNu8, &CAMERA_STREAMING);     // "%2" SCNu8  - Format specifier for unsinged 8bits
+        sscanf(val, "%d", &CAMERA_STREAMING);     // "%2" SCNu8  - Format specifier for unsinged 8bits
     }
     else if(strcmp(var,"PICTURE_SIZE_X") == 0){
-        sscanf(val, "%2" SCNu16, &PICTURE_SIZE_X);      // "%2" SCNu16 - Format specifier for unsinged 16bits
+        sscanf(val, "%d", &PICTURE_SIZE_X);      // "%2" SCNu16 - Format specifier for unsinged 16bits
     }
     else if(strcmp(var,"PICTURE_SIZE_Y") == 0){
-        sscanf(val, "%2" SCNu16, &PICTURE_SIZE_Y);
+        sscanf(val, "%d", &PICTURE_SIZE_Y);
     }
     else if(strcmp(var,"CAMERA_SINGLE_SHOT") == 0){
-        sscanf(val, "%2" SCNu8, &CAMERA_SINGLE_SHOT);
+        sscanf(val, "%d", &CAMERA_SINGLE_SHOT);
     }
     else if(strcmp(var,"JPEG_QUALITY") == 0){
-        sscanf(val, "%2" SCNu8, &JPEG_QUALITY);
+        sscanf(val, "%d", &JPEG_QUALITY);
     }
     else if(strcmp(var,"CONTRAST") == 0){
-        sscanf(val, "%2" SCNu8, &CONTRAST);
+        sscanf(val, "%d", &CONTRAST);
     }
     else if(strcmp(var,"STREAMING_PORT") == 0){
-        sscanf(val, "%2" SCNu16, &STREAMIG_PORT);
+        sscanf(val, "%d", &STREAMIG_PORT);
     }
     else if(strcmp(var,"CAMERA_SET_IP") == 0){
         inet_aton(val,&ip.sin_addr);
