@@ -7,6 +7,9 @@
 
 #include <arpa/inet.h>
 
+#define NETFILEPATH "network_setting.txt"
+#define VIDFILEPATH "video_setting.txt"
+
 uint8_t CAMERA_STREAMING;
 uint16_t PICTURE_SIZE_X;
 uint16_t PICTURE_SIZE_Y;
@@ -38,11 +41,11 @@ void initvar(){
     CAMERA_STREAMING_IP = ip.sin_addr.s_addr;
 }
 
+struct sockaddr_in ip;
 void strupr(char *str);
 
 void readVar(char *var, char **payload, int *len){
     char str[1024];
-    struct sockaddr_in ip;
 
     strupr(var);
     printf("R: %s\n", var);
@@ -93,17 +96,15 @@ void readVar(char *var, char **payload, int *len){
 }
 
 void writeVar(char *var, char* val){
-    struct sockaddr_in ip;
-
     strupr(var);
 
     printf("W: %s -> %s\n", var, val);
 
     if(strcmp(var,"CAMERA_STREAMING") == 0){
-        sscanf(val, "%2" SCNu8, &CAMERA_STREAMING);
+        sscanf(val, "%2" SCNu8, &CAMERA_STREAMING);     // "%2" SCNu8  - Format specifier for unsinged 8bits
     }
     else if(strcmp(var,"PICTURE_SIZE_X") == 0){
-        sscanf(val, "%2" SCNu16, &PICTURE_SIZE_X);
+        sscanf(val, "%2" SCNu16, &PICTURE_SIZE_X);      // "%2" SCNu16 - Format specifier for unsinged 16bits
     }
     else if(strcmp(var,"PICTURE_SIZE_Y") == 0){
         sscanf(val, "%2" SCNu16, &PICTURE_SIZE_Y);
@@ -140,14 +141,12 @@ void writeVar(char *var, char* val){
     }
 }
 
-void fileout(void){
+void net_fileout(void){
 	FILE *fp,*network;
 	char strin[512];
 	char strout[512];
-    	struct sockaddr_in ip;
-
 	int linectr = 0;
-	fp = fopen("network_settings.txt","r");
+	fp = fopen(NETFILEPATH,"r");
 	network = fopen("network","w+");
 
 	if(fp == NULL || network == NULL){
@@ -170,7 +169,7 @@ void fileout(void){
 		printf("-%d : %s",linectr,strin);
 		switch(linectr){
 			case 2:
-		                ip.sin_addr.s_addr = CAMERA_SET_IP;
+                ip.sin_addr.s_addr = CAMERA_SET_IP;
 				sprintf(strout,"%s\n",inet_ntoa(ip.sin_addr));
 				break;
 			case 21:
@@ -186,18 +185,17 @@ void fileout(void){
 	fclose(fp);
 	fclose(network);
 
-	remove("network_settings.txt");
-	rename("network", "network_settings.txt");
+	remove(NETFILEPATH);
+	rename("network", NETFILEPATH);
 }
 
-void filein(void){
+void net_filein(void){
 	FILE *fp,*network;
 	char strin[512];
 	char strout[512];
-	struct sockaddr_in ip;
-
+	uint16_t data;
 	int linectr = 0;
-	fp = fopen("network_settings.txt","r");
+	fp = fopen(NETFILEPATH,"r");
 	network = fopen("network","w+");
 
 	if(fp == NULL || network == NULL){
@@ -213,22 +211,122 @@ void filein(void){
 		fgets(strin, 512, fp);
 		if(!feof(fp)){
 			++linectr;
+		}
+		else{
 			break;
 		}
-		//printf("-%d : %s",linectr,strin);
+		printf("-%d : %s",linectr,strin);
 		switch(linectr){
-			case 2:
-				sscanf(strin,"%s\n",strout);
-	        		inet_aton(strout,&ip.sin_addr);
-               			CAMERA_STREAMING_IP = ip.sin_addr.s_addr;
-			break;
-			case 21:
-				sscanf(strin,"%u\n", &STREAMIG_PORT);
-			break;
+		case 2:
+		    sscanf(strin,"%s\n",strout);
+		    inet_aton(strout,&ip.sin_addr);
+		    CAMERA_STREAMING_IP = ip.sin_addr.s_addr;
+		    break;
+		case 21:
+			sscanf(strin,"%u\n", &STREAMIG_PORT);
+		break;
 		}
 	}
 
 	fclose(fp);
+}
+
+void vid_fileout(void){
+	FILE *fp,*video;
+	char strin[512];
+	char strout[512];
+	int linectr = 0;
+	fp = fopen(VIDFILEPATH,"r");
+	video = fopen("video","w+");
+
+	if(fp == NULL || video == NULL){
+		printf("FILE IO ERROR\n");
+		exit(-1);
+	}
+	if(feof(fp)){
+		printf("EMPTY FILE\n");
+		exit(-1);
+	}
+
+	while(!feof(fp)){
+		fgets(strin, 512, fp);
+		if(!feof(fp)){
+			++linectr;
+		}
+		else{
+			break;
+		}
+		printf("-%d : %s",linectr,strin);
+		switch(linectr){
+            case 1:
+    			sprintf(strout,"%d\n",PICTURE_SIZE_X);
+            break;
+            case 2:
+    			sprintf(strout,"%d\n",PICTURE_SIZE_Y);
+            break;
+			default:
+				sprintf(strout,"%s",strin);
+		}
+		printf("+%d : %s",linectr,strout);
+		fputs(strout, video);
+	}
+
+	fclose(fp);
+	fclose(video);
+
+	remove(VIDFILEPATH);
+	rename("video", VIDFILEPATH);
+}
+
+void vid_filein(void){
+	FILE *fp,*video;
+	char strin[512];
+	char strout[512];
+	uint16_t data;
+    uint32_t data32;
+	int linectr = 0;
+	fp = fopen(VIDFILEPATH,"r");
+	video = fopen("video","w+");
+
+	if(fp == NULL || video == NULL){
+		printf("FILE IO ERROR\n");
+		exit(-1);
+	}
+	if(feof(fp)){
+		printf("EMPTY FILE\n");
+		exit(-1);
+	}
+
+	while(!feof(fp)){
+		fgets(strin, 512, fp);
+		if(!feof(fp)){
+			++linectr;
+		}
+		else{
+			break;
+		}
+		//printf("-%d : %s",linectr,strin);
+		switch(linectr){
+            case 1:
+				sscanf(strin,"%d\n", &PICTURE_SIZE_X);
+            break;
+            case 2:
+				sscanf(strin,"%d\n", &PICTURE_SIZE_Y);
+            break;
+		}
+	}
+
+	fclose(fp);
+}
+
+void fileout(void){
+    net_fileout();
+    vid_fileout();
+}
+
+void filein(void){
+    net_filein();
+    vid_filein();
 }
 
 void strupr(char *str){
