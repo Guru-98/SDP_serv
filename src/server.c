@@ -49,27 +49,27 @@ int main() {
     	perror("bind2dev error");
         exit(EXIT_FAILURE);
 	}
-	
-    if ( (listen(sd, 5)) != 0 ) { 
+
+    if ( (listen(sd, 5)) != 0 ) {
     	perror("listen error");
         exit(EXIT_FAILURE);
     }
-    
+
     initvar();
     filein();
-    
+
     pthread_t tid[60];
     int i = 0;
-    
+
 	while(1){
 		int you_len;
-		
+
         nsd = accept(sd, (struct sockaddr *) &you, &you_len);
         if (nsd < 0) {
             perror("accept error");
             exit(EXIT_FAILURE);
         }
-        
+
 		if( pthread_create(&tid[i], NULL, socketThread, &nsd) != 0 )
            printf("Failed to create thread\n");
         if( i >= 50)
@@ -86,31 +86,29 @@ int main() {
 	return 0;
 }
 
-void * socketThread(void *arg){   
-	char buffer[MAXLINE]; 
+void * socketThread(void *arg){
+	char buffer[MAXLINE];
 	char *ret_buf;
 	int ret_len;
     int n;
-	
+
     int nsd = *((int *)arg);
 
     memset(buffer, 0 , sizeof(buffer));
-		
+
     n = read(nsd, (char *)buffer, MAXLINE);
 
-    /*
-    printf("CLIENT : %s\n",inet_ntoa(you.sin_addr));
+
+    // printf("CLIENT : %s\n",inet_ntoa(you.sin_addr));
     printf("D_CLIENT: %d(%04X)\n",n,n);
     dump(buffer, n);
-    */
+
 
     pthread_mutex_lock(&lock);
     process_payload(buffer, n, &ret_buf, &ret_len);
 
-    /*
     printf("RESP:\n");
     dump(ret_buf,ret_len);
-    */
 
     fileout();
     pthread_mutex_unlock(&lock);
@@ -119,7 +117,7 @@ void * socketThread(void *arg){
         perror("response error");
         exit(EXIT_FAILURE);
     }
-    close(nsd);
+    close(nsd);		//closing TCP session after each command
     pthread_exit(NULL);
 }
 
@@ -130,15 +128,15 @@ void process_payload(char* payload, int maxlen, char** ret_payload, int* ret_len
 
 	*ret_len = 0;
 	*ret_payload = NULL;
-	
+
 	if(*payload != 0x1B){
 	    printf("Not a SPS packet\n");
 	    return;
     }
-    
+
     if(*(payload+maxlen-1) == '\r')
         *(payload+maxlen-1) = '\0';
-    
+
     memcpy(com_t, payload+1 ,2);
     if(strcasecmp(com_t,"MO") == 0){
         sscanf(payload+3, "%s", com_var);
